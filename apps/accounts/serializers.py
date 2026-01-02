@@ -60,11 +60,29 @@ class UserLoginSerializer(serializers.Serializer):
 class UserProfileSerializer(serializers.ModelSerializer):
     """Serializer for user profile"""
     full_name = serializers.ReadOnlyField()
+    posts_count = serializers.SerializerMethodField()
+    comments_count = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['id', 'email', 'username', 'first_name', 'last_name', 'full_name', 'bio', 'avatar', 'created_at', 'updated_at']
+        fields = (
+            'id', 'username', 'email', 'first_name', 'last_name',
+            'full_name', 'avatar', 'bio', 'created_at', 'updated_at',
+            'posts_count', 'comments_count'
+        )
+        read_only_fields = ('id', 'created_at', 'updated_at')
 
+    def get_posts_count(self, obj):
+        try:
+            return obj.posts.count()
+        except  AttributeError:
+            return 0
+        
+    def get_comments_count(self, obj):
+        try:
+            return obj.comments.count()
+        except  AttributeError:
+            return 0
 
 class UserUpdateSerializer(serializers.ModelSerializer):
     """Serializer for updating user profile"""
@@ -86,7 +104,7 @@ class ChangePasswordSerializer(serializers.Serializer):
         write_only=True,
         validators=[validate_password]
     )
-    new_password_confirmation = serializers.Charfield(write_only=True)
+    new_password_confirmation = serializers.CharField(write_only=True)
 
     def validate_old_password(self, value):
         user = self.context['request'].user

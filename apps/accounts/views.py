@@ -46,7 +46,7 @@ class UserLoginView(generics.GenericAPIView):
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data['data']
+        user = serializer.validated_data['user']
 
         login(request, user)
         refresh = RefreshToken.for_user(user)
@@ -60,7 +60,7 @@ class UserLoginView(generics.GenericAPIView):
         }, status=status.HTTP_200_OK)
     
 
-class UserProfileView(generics.RetrieveAPIView):
+class UserProfileView(generics.RetrieveUpdateAPIView):
     """Class view for retrieving user profile"""
     serializer_class = UserProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
