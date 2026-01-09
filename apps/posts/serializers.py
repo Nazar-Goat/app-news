@@ -1,6 +1,6 @@
 
-import slugify
-from apps.accounts import serializers
+from django.utils.text import slugify
+from rest_framework import serializers
 from apps.posts.models import Category, Post
 
 

@@ -62,7 +62,7 @@ class PostListCreateView(generics.ListCreateAPIView):
 class PostDetailsView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Post.objects.select_related('author', 'category').all()
     serializer_class = PostDetailSerializer
-    permissin_classes = [permissions.IsAuthorOrReadOnly]
+    permission_classes = [IsAuthorOrReadOnly]
     lookup_field = 'slug'
 
     def get_serializer_class(self):
@@ -93,7 +93,3 @@ class MyPostsView(generics.ListAPIView):
         return Post.objects.filter(
             author=self.request.user
         ).select_related('author', 'category')
-        
-
-
-
