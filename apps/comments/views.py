@@ -25,7 +25,7 @@ class CommentListCreateView(generics.ListCreateAPIView):
         return CommentSerializer
 
 
-class CommentDetailsView(generics.RetriveUpdateDeleteAPIView):
+class CommentDetailsView(generics.RetrieveUpdateDestroyAPIView):
     """View for retrieving and updating a specific comment."""
     queryset = Comment.objects.select_related('post', 'author').all()
     serializer_class =CommentUpdateSerializer

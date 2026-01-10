@@ -27,16 +27,16 @@ class PostListSerializer(serializers.ModelSerializer):
 
     author = serializers.StringRelatedField()
     category = serializers.StringRelatedField()
-    comments_count = serializers.SerializerMethodField()
+    comments_count = serializers.ReadOnlyField()
 
     class Meta:
         model = Post
         fields = [
             'id', 'title', 'slug', 'content', 'image', 'category',
             'author', 'status', 'created_at', 'updated_at',
-            'views_count', 'comments_count'
+            'view_count', 'comments_count',
         ]
-        read_only_fields = ['slug', 'author', 'views_count']
+        read_only_fields = ['slug', 'author', 'view_count']
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -57,9 +57,9 @@ class PostDetailSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'slug', 'content', 'image', 'category',
             'author', 'status', 'created_at', 'updated_at',
-            'views_count', 'comments_count'
+            'view_count', 'comments_count', 'author_info', 'category_info'
         ]
-        read_only_fields = ['slug', 'author', 'views_count']
+        read_only_fields = ['slug', 'author', 'view_count']
 
     def get_author_info(self, obj):
         author = obj.author

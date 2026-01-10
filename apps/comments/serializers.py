@@ -37,10 +37,11 @@ class CommentCreateSerializer(serializers.ModelSerializer):
         ]
 
     def validate_post(self, value):
-        if not Post.objects.filer(id=value.id).exists():
+        if not Post.objects.filter(id=value.id).exists():
             raise serializers.ValidationError(
                 "Post does not exist."
             )
+        return value
         
     def validate_parent(self, value):
         if value and value.post != self.initial_data.get('post'):
@@ -49,7 +50,7 @@ class CommentCreateSerializer(serializers.ModelSerializer):
             )
         
     def create(self, validated_data):
-        self.validated_data['author'] = self.context['request'].user
+        validated_data['author'] = self.context['request'].user
         return super().create(validated_data)
     
 

@@ -74,10 +74,10 @@ class PostDetailsView(generics.RetrieveUpdateDestroyAPIView):
         instance = self.get_object()
 
         if request.method == 'GET':
-            instance.increment_views()
+            instance.increment_view_count()
 
         serializer = self.get_serializer(instance)
-        return Responce(serializer.data)
+        return Response(serializer.data)
     
 
 class MyPostsView(generics.ListAPIView):

@@ -42,6 +42,7 @@ class UserLoginView(generics.GenericAPIView):
 
     serializer_class = UserLoginSerializer
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
