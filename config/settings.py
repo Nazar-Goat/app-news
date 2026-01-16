@@ -32,6 +32,8 @@ LOCAL_APPS = [
     'apps.accounts',
     'apps.posts',
     'apps.comments',
+    'apps.subscribe',
+    'apps.payment',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -220,5 +222,5 @@ LOGGING = {
     },
 }
 
-# Создаем директорию для логов
+# create log directory
 import os
