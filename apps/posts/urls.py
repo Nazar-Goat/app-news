@@ -7,6 +7,8 @@ urlpatterns = [
 
     path('', views.PostListCreateView.as_view(), name='posts-list'),
     path('my-posts/', views.MyPostsView.as_view(), name='my-posts'),
+    path('pinned/', views.pinned_posts_only, name='pinned-posts-only'),
+    path('featured/', views.featured_posts, name='featured-posts'),
     path('<slug:slug>/', views.PostDetailsView.as_view(), name='post-detail'),
     
 ]
