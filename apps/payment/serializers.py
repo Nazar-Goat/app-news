@@ -1,0 +1,201 @@
+from rest_framework import serializers
+from decimal import Decimal
+from .models import Payment, PaymentAttempt, Refund, WebhookEvent
+from apps.payment import models
+
+
+class PaymentAttemptSerializer(serializers.ModelSerializer):
+    """Serializer for payment attempts"""
+
+    class Meta:
+        model = PaymentAttempt
+        fields =['id', 'stripe_charge_id', 'status', 'error_message', 'metadata', 'created_at']
+
+        read_only_fields = ['id', 'created_at']
+
+class WebhookEventSerializer(serializers.ModelSerializer):
+    """Serializer for webhook events data from Stripe"""
+
+    class Meta:
+        model = WebhookEvent
+        fields = [
+            'id',
+            'provider',
+            'event_type',
+            'status',
+            'processed_at',
+            'error_message',
+            'created_at',
+        ]
+        read_only_fields = ['id', 'created_at']
+
+
+class StripeCheckoutSessionSerializer(serializers.Serializer):
+    """Serializer for Stripe session creation"""
+
+    checkout_url = serializers.URLField(read_only=True)
+    session_id = serializers.CharField(read_only=True)
+    payment_id = serializers.IntegerField(read_only=True)
+
+
+class PaymentStatusSerializer(serializers.Serializer):
+    """Serializer for payment status"""
+
+    payment_id = serializers.IntegerField()
+    status = serializers.CharField()
+    message = serializers.CharField()
+    subscription_activated = serializers.BooleanField(default=False)
+
+
+class PaymentSerializer(serializers.ModelSerializer):
+    """Serializer for Payment model"""
+    user_info = serializers.SerializerMethodField()#to get proper user data 
+    subscription_info = serializers.SerializerMethodField()#to get proper subscription info
+    is_successful = serializers.ReadOnlyField()#user can only read but not change this data
+    is_pending = serializers.ReadOnlyField()
+    can_be_refunded = serializers.ReadOnlyField()
+
+    class Meta:
+        model = Payment
+        fields = [
+            'id', 'user', 'user_info', 'subscription', 'subscription_info',
+            'amount', 'currency', 'status', 'payment_method', 'description',
+            'is_successful', 'is_pending', 'can_be_refunded',
+            'created_at', 'updated_at', 'processed_at'
+        ]
+        read_only_fields = [
+            'id', 'user', 'status', 'created_at', 'updated_at', 'processed_at'
+            ]
+        
+    def get_user_info(self, obj):
+        return {
+            'id': obj.user.id,
+            'username': obj.user.username,
+            'email': obj.user.email
+        }
+    
+    def get_subscription_info(self, obj):
+        if obj.subscription:
+            return {
+                'id': obj.subscription.id,
+                'plan_name': obj.subscription.plan.name,
+                'start_date': obj.subscription.start_date,
+                'end_date': obj.subscription.end_date,
+                'status': obj.subscription.status
+            }
+        return None
+    
+
+class PaymentCreateSerializer(serializers.Serializer):
+    """Serializer to create payment"""
+    subscription_plan_id = serializers.IntegerField()
+    payment_method = serializers.ChoiceField(choices=Payment.PAYMENT_METHOD, default='stripe')
+    success_url = serializers.URLField(required=False)
+    cancel_url = serializers.URLField(required=False)
+
+    def validate_subscription_plan_id(self, value):
+        """validates if plan exists and active"""
+        from apps.subscribe.models import SubscriptionPlan
+
+        try:
+            plan = SubscriptionPlan.objects.get(id=value, status='active')
+        except SubscriptionPlan.DoesNotExist:
+            raise serializers.ValidationError("Subscription plan does not exist or unactive")
+        return value
+        
+    def validate(self, attrs):
+        #get user
+        user = self.context['request'].user
+        #check users subscription
+        if hasattr(user, 'subscription') and user.subscription.status == 'active':
+            raise serializers.ValidationError({
+                'non_field_errors': ['User already has a subscription']
+            })
+        
+        #get users payments
+        payments = Payment.objects.filter(user=user, status__in=['pending', 'processing']).exists()
+
+        if payments:
+            raise serializers.ValidationError({
+                'non_field_errors': ["User has a pending payments. Complete or cancel them."]
+            })
+        
+        return attrs
+    
+
+class RefundSerializer(serializers.ModelSerializer):
+    payment_info = serializers.SerializerMethodField()
+    created_by_info = serializers.SerializerMethodField()
+    is_partial = serializers.ReadOnlyField()
+
+    class Meta:
+        model = Refund
+        fields = [
+            'id', 'payment', 'payment_info', 'amount', 'reason',
+            'status', 'is_partial', 'created_by', 'created_by_info',
+            'created_at', 'processed_at'
+        ]
+        read_only_fields = [
+            'id', 'status', 'created_by', 'created_at', 'processed_at'
+        ]
+
+    def get_payment_info(self, obj):
+        """returns payment information"""
+        return {
+            'id': obj.payment.id,
+            'amount': obj.payment.amount,
+            'currency': obj.payment.currency,
+            'status': obj.payment.status,
+            'user': obj.payment.user.username
+        }
+    
+    def get_created_by_info(self, obj):
+        """returns users information"""
+        if obj.created_by:
+            return {
+                'id': obj.created_by.id,
+                'username': obj.created_by.username
+            }
+        return None
+    
+    def validate_amount(self, value):
+        """validates if refund value is positive"""
+        if value <= 0:
+            raise serializers.ValidationError("Refund amount should be positive")
+        return value
+    
+    def validate(self, attrs):
+        """validates refund"""
+        payment_id = self.context.get('payment_id')
+        if payment_id:
+            try:
+                payment = Payment.objects.get(id=payment_id)
+            except Payment.DoesNotExist:
+                raise serializers.ValidationError("Payment not found")
+            
+            if not payment.can_be_refunded:
+                raise serializers.ValidationError("Payment cannot be refunded")
+
+            total_refunded = payment.refunds.filter(
+                status='succeeded'
+            ).aggregate(total=models.Sum('amount'))['total'] or Decimal('0')
+            
+            if attrs['amount'] > (payment.amount - total_refunded):
+                raise serializers.ValidationError(
+                    "Refund amount exceeds remaining payment amount."
+                )
+        
+        return attrs
+    
+class RefundCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating a refund"""
+    
+    class Meta:
+        model = Refund
+        fields = ['amount', 'reason']
+
+    def validate_amount(self, value):
+        """validates refund sum"""
+        if value <= 0:
+            raise serializers.ValidationError("Refund amount must be positive.")
+        return value
