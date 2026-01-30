@@ -55,7 +55,7 @@ class PostListCreateView(generics.ListCreateAPIView):
         show_pinned_first = not ordering or ordering in ['-created_at', 'created_at']
 
         if show_pinned_first:
-            return Post.get_posts_for_feed().filter(
+            return Post.objects.filter(
                 Q(status='published') | (
                     Q(author=self.request.user) if self.request.user.is_authenticated else Q()
                 )
