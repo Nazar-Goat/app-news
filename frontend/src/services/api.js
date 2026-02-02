@@ -32,7 +32,6 @@ api.interceptors.request.use(
 )
 
 
-// Интерцептор ответов - обработка ошибок и обновление токена
 api.interceptors.response.use(
   (response) => {
     return response
@@ -44,7 +43,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true
       
-      // Попытка обновить токен
+      // Попытка обновить токен ТОЛЬКО если он есть
       if (authStore.refreshToken) {
         try {
           await authStore.refreshAccessToken()
@@ -52,18 +51,28 @@ api.interceptors.response.use(
           return api(originalRequest)
         } catch (refreshError) {
           authStore.logout()
-          router.push({ name: 'Login' })
-          toast.error('Сессия истекла. Пожалуйста, войдите снова.')
+          
+          // Редирект на логин ТОЛЬКО если текущая страница требует авторизации
+          const currentRoute = router.currentRoute.value
+          if (currentRoute.meta?.requiresAuth) {
+            router.push({ name: 'Login', query: { redirect: currentRoute.fullPath } })
+            toast.error('Сессия истекла. Пожалуйста, войдите снова.')
+          }
+          
           return Promise.reject(refreshError)
         }
       } else {
-        authStore.logout()
-        router.push({ name: 'Login' })
-        toast.error('Необходима авторизация.')
+        // Если нет refresh токена, но страница требует авторизации
+        const currentRoute = router.currentRoute.value
+        if (currentRoute.meta?.requiresAuth) {
+          authStore.logout()
+          router.push({ name: 'Login', query: { redirect: currentRoute.fullPath } })
+          toast.error('Необходима авторизация.')
+        }
       }
     }
     
-    // Обработка других ошибок
+    // Обработка других ошибок (без изменений)
     if (error.response) {
       const { status, data } = error.response
       
@@ -72,7 +81,6 @@ api.interceptors.response.use(
           if (data.detail) {
             toast.error(data.detail)
           } else if (typeof data === 'object') {
-            // Показываем первую ошибку валидации
             const firstError = Object.values(data)[0]
             if (Array.isArray(firstError)) {
               toast.error(firstError[0])
@@ -137,8 +145,8 @@ export const postsAPI = {
   delete: (slug) => api.delete(`/api/v1/posts/${slug}/`),
   getMyPosts: (params) => api.get('/api/v1/posts/my-posts/', { params }),
   // В api.js заменить:
-  getPopular: () => api.get('/api/v1/posts/featured/'), 
-  getRecent: () => api.get('/api/v1/posts/featured/')
+  getPopular: () => api.get('/api/v1/posts/', { params: { ordering: '-views_count', page_size: 6 } }), 
+  getRecent: () => api.get('/api/v1/posts/', { params: { ordering: '-created_at', page_size: 6 } })
 }
 
 export const subscriptionAPI = {

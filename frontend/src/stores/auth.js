@@ -35,8 +35,8 @@ export const useAuthStore = defineStore('auth', () => {
     // Сохраняем токены в cookies
     if (accessToken) {
       Cookies.set('access_token', accessToken, { 
-        expires: 1, // 1 день
-        secure: process.env.NODE_ENV === 'production',
+        expires: 1,
+        secure: import.meta.env.PROD,  // Правильный способ для Vite
         sameSite: 'strict'
       })
     } else {
@@ -45,12 +45,12 @@ export const useAuthStore = defineStore('auth', () => {
     
     if (refreshTokenValue) {
       Cookies.set('refresh_token', refreshTokenValue, { 
-        expires: 7, // 7 дней
-        secure: process.env.NODE_ENV === 'production',
+        expires: 7,
+        secure: import.meta.env.PROD,
         sameSite: 'strict'
       })
     } else {
-      Cookies.remove('refresh_token')
+      Cookies.remove('refresh_token') 
     }
   }
 

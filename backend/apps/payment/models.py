@@ -48,7 +48,7 @@ class Payment(models.Model):
     metadata = models.JSONField(default=dict, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_ad = models.DateTimeField(auto_now=True)
+    updated_at = models.DateTimeField(auto_now=True)
     proceeded_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
@@ -77,7 +77,8 @@ class Payment(models.Model):
     
     @property
     def can_be_refunded(self):
-        return self.is_successfull and self.payment_method == 'stripe'
+        return self.is_successful and self.payment_method == 'stripe'
+
 
     def mark_as_succeeded(self):
         """marks payment as successful"""

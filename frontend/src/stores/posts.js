@@ -226,29 +226,33 @@ export const usePostsStore = defineStore('posts', () => {
     }
   }
 
-  const fetchPopularPosts = async () => {
-    try {
-      const response = await postsAPI.getPopular()
-      popularPosts.value = response.data || []
-      return response.data
-    } catch (error) {
-      console.error('Ошибка загрузки популярных постов:', error)
-      popularPosts.value = []
-      throw error
-    }
-  }
+  
 
-  const fetchRecentPosts = async () => {
-    try {
-      const response = await postsAPI.getRecent()
-      recentPosts.value = response.data || []
-      return response.data
-    } catch (error) {
-      console.error('Ошибка загрузки последних постов:', error)
-      recentPosts.value = []
-      throw error
-    }
+  const fetchPopularPosts = async () => {
+  try {
+    const response = await postsAPI.getPopular()
+    // Правильная обработка пагинированного ответа
+    popularPosts.value = response.data.results || response.data || []
+    return response.data
+  } catch (error) {
+    console.error('Ошибка загрузки популярных постов:', error)
+    popularPosts.value = []
+    throw error
   }
+}
+
+const fetchRecentPosts = async () => {
+  try {
+    const response = await postsAPI.getRecent()
+    // Правильная обработка пагинированного ответа
+    recentPosts.value = response.data.results || response.data || []
+    return response.data
+  } catch (error) {
+    console.error('Ошибка загрузки последних постов:', error)
+    recentPosts.value = []
+    throw error
+  }
+}
 
   // Действия для категорий
   const fetchCategories = async (params = {}) => {
@@ -283,19 +287,29 @@ export const usePostsStore = defineStore('posts', () => {
   }
 
   const fetchPostsByCategory = async (categorySlug, params = {}) => {
-    isLoading.value = true
-    try {
-      const response = await categoriesAPI.getPosts(categorySlug, params)
-      posts.value = response.data.posts || []
-      return response.data
-    } catch (error) {
-      console.error('Ошибка загрузки постов категории:', error)
-      posts.value = []
-      throw error
-    } finally {
-      isLoading.value = false
+  isLoading.value = true
+  try {
+    const response = await categoriesAPI.getPosts(categorySlug, params)
+    posts.value = response.data.results || []  // Используем results вместо posts
+    
+    // Обновляем пагинацию
+    pagination.value = {
+      count: response.data.count || 0,
+      next: response.data.next,
+      previous: response.data.previous,
+      currentPage: params.page || 1,
+      pageSize: params.page_size || 20
     }
+    
+    return response.data
+  } catch (error) {
+    console.error('Ошибка загрузки постов категории:', error)
+    posts.value = []
+    throw error
+  } finally {
+    isLoading.value = false
   }
+}
 
   // Утилиты для фильтрации и поиска
   const setFilters = (newFilters) => {

@@ -96,7 +96,7 @@ class PostDetailSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         if not request or not request.user.is_authenticated:
             return False
-        return obj.can_be_pinned_by_user(request.user)
+        return obj.can_be_pinned_by(request.user)
     
 
 class PostCreateUpdateSerializer(serializers.ModelSerializer):

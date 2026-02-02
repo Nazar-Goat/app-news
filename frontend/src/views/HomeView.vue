@@ -282,11 +282,10 @@ export default {
       try {
         // Загружаем данные параллельно
         await Promise.all([
-          postsStore.fetchPopularPosts?.() || Promise.resolve(),
-          postsStore.fetchRecentPosts?.() || Promise.resolve(),
-          postsStore.fetchCategories?.() || Promise.resolve()
-        ])
-        
+          postsStore.fetchPopularPosts(),
+          postsStore.fetchRecentPosts(),
+          postsStore.fetchCategories()
+        ]) 
         // Подсчитываем закрепленные посты
         pinnedPostsCount.value = popularPosts.value.filter(post => post.is_pinned).length
       } catch (error) {

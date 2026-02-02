@@ -76,7 +76,7 @@ export default {
         
         // Если пользователь авторизован, загружаем статус подписки
         if (authStore.isAuthenticated) {
-          subscriptionStore.fetchSubscriptionStatus()
+          await subscriptionStore.fetchSubscriptionStatus()
         }
       } catch (error) {
         console.error('Ошибка инициализации приложения:', error)

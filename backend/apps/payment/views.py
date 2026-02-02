@@ -78,7 +78,7 @@ def get_payment_history(request):
 		
 		return Response({
                'count': payments.count(),
-               'result': serialized_data.data
+               'results': serialized_data.data
         })
 	
 
