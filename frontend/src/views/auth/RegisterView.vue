@@ -430,7 +430,7 @@ export default {
           first_name: form.first_name,
           last_name: form.last_name,
           password: form.password,
-          password_confirm: form.password_confirm
+          password_confirmation: form.password_confirm  
         })
         
         toast.success('Аккаунт успешно создан! Добро пожаловать!')

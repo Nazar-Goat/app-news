@@ -41,7 +41,7 @@ class PostManager(models.Manager):
             pinned_info__user__subscription__end_date__gt=models.functions.Now(),
             status='published'
         ).select_related(
-            'pinned_info', 'pinned_info__user', 'pinned_info_user__subscription'
+            'pinned_info', 'pinned_info__user', 'pinned_info__user__subscription'
         ).order_by('pinned_info__pinned_at')
     
     def regular_posts(self):
@@ -54,7 +54,7 @@ class PostManager(models.Manager):
     def with_subscription_info(self):
         return self.select_related(
             'author',
-            'author__subscriptions',
+            'author__subscription',
             'category'
         ).prefetch_related('pinned_info')
     

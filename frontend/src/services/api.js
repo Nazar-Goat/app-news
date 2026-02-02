@@ -123,7 +123,9 @@ export const categoriesAPI = {
   update: (slug, data) => api.put(`/api/v1/posts/categories/${slug}/`, data),
   updatePartial: (slug, data) => api.patch(`/api/v1/posts/categories/${slug}/`, data),
   delete: (slug) => api.delete(`/api/v1/posts/categories/${slug}/`),
-  getPosts: (slug, params) => api.get(`/api/v1/posts/categories/${slug}/posts/`, { params })
+  getPosts: (slug, params) => api.get('/api/v1/posts/', { 
+     params: { ...params, category: slug } 
+   })
 }
 
 export const postsAPI = {
@@ -134,8 +136,9 @@ export const postsAPI = {
   updatePartial: (slug, data) => api.patch(`/api/v1/posts/${slug}/`, data),
   delete: (slug) => api.delete(`/api/v1/posts/${slug}/`),
   getMyPosts: (params) => api.get('/api/v1/posts/my-posts/', { params }),
-  getPopular: () => api.get('/api/v1/posts/popular/'),
-  getRecent: () => api.get('/api/v1/posts/recent/')
+  // В api.js заменить:
+  getPopular: () => api.get('/api/v1/posts/featured/'), 
+  getRecent: () => api.get('/api/v1/posts/featured/')
 }
 
 export const subscriptionAPI = {
@@ -162,7 +165,7 @@ export const paymentAPI = {
 export const commentsAPI = {
   getAll: (params) => api.get('/api/v1/comments/', { params }),
   getById: (id) => api.get(`/api/v1/comments/${id}/`),
-  create: (data, config = {}) => api.post('/api/v1/posts/', data, config),
+  create: (data, config = {}) => api.post('/api/v1/comments/', data, config),
   update: (id, data) => api.put(`/api/v1/comments/${id}/`, data),
   updatePartial: (id, data) => api.patch(`/api/v1/comments/${id}/`, data),
   delete: (id) => api.delete(`/api/v1/comments/${id}/`),

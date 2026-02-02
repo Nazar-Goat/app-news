@@ -94,13 +94,11 @@ class PaymentCreateSerializer(serializers.Serializer):
     cancel_url = serializers.URLField(required=False)
 
     def validate_subscription_plan_id(self, value):
-        """validates if plan exists and active"""
         from apps.subscribe.models import SubscriptionPlan
-
         try:
-            plan = SubscriptionPlan.objects.get(id=value, status='active')
+            plan = SubscriptionPlan.objects.get(id=value, is_active=True)
         except SubscriptionPlan.DoesNotExist:
-            raise serializers.ValidationError("Subscription plan does not exist or unactive")
+            raise serializers.ValidationError("Subscription plan not found or inactive")
         return value
         
     def validate(self, attrs):

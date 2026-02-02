@@ -222,18 +222,65 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  // Проверка прав доступа
-  const canEditPost = (post) => {
-    return user.value && (user.value.id === post.author || user.value.is_staff)
+const canEditPost = (post) => {
+  if (!user.value) return false
+  
+  // Определяем ID автора поста
+  let authorId = null
+  
+  if (typeof post.author === 'object' && post.author !== null) {
+    // Если author это объект: { id: 1, username: 'john' }
+    authorId = post.author.id
+  } else if (typeof post.author === 'number') {
+    // Если author это число (ID)
+    authorId = post.author
+  } else if (post.author_id) {
+    // Если есть отдельное поле author_id
+    authorId = post.author_id
+  } else if (post.author_info && post.author_info.id) {
+    // Если есть author_info объект
+    authorId = post.author_info.id
   }
+  
+  // Проверяем права
+  return authorId === user.value.id || user.value.is_staff
+}
 
-  const canEditComment = (comment) => {
-    return user.value && (user.value.id === comment.author || user.value.is_staff)
+/**
+ * Проверяет, может ли пользователь редактировать комментарий
+ * Учитывает разные форматы данных от бэкенда
+ */
+const canEditComment = (comment) => {
+  if (!user.value) return false
+  
+  // Определяем ID автора комментария
+  let authorId = null
+  
+  if (typeof comment.author === 'object' && comment.author !== null) {
+    // Если author это объект: { id: 1, username: 'john' }
+    authorId = comment.author.id
+  } else if (typeof comment.author === 'number') {
+    // Если author это число (ID)
+    authorId = comment.author
+  } else if (comment.author_id) {
+    // Если есть отдельное поле author_id
+    authorId = comment.author_id
+  } else if (comment.author_info && comment.author_info.id) {
+    // Если есть author_info объект
+    authorId = comment.author_info.id
   }
+  
+  // Проверяем права
+  return authorId === user.value.id || user.value.is_staff
+}
 
-  const canModerate = () => {
-    return user.value && (user.value.is_staff || user.value.is_superuser)
-  }
+
+/**
+ * Проверяет, может ли пользователь модерировать контент
+ */
+const canModerate = () => {
+  return user.value && (user.value.is_staff || user.value.is_superuser)
+}
 
   return {
     // Состояние

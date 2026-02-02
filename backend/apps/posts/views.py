@@ -1,8 +1,9 @@
+from genericpath import exists
 from rest_framework import generics, permissions, status, filters
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
-from django.db.models import Q
+from django.db.models import Q, Exists, OuterRef
 from django.shortcuts import get_object_or_404
 
 from .models import Category, Post
@@ -42,25 +43,32 @@ class PostListCreateView(generics.ListCreateAPIView):
     ordering = ['-created_at']
 
     def get_queryset(self):
-        queryset = Post.objects.select_related('author', 'category').all()
-
+        from apps.subscribe.models import PinnedPost
+        
+        queryset = Post.objects.select_related('author', 'category')
+        
+        # filtering based on user authentication
         if not self.request.user.is_authenticated:
+            # non-authenticated users see only published posts
             queryset = queryset.filter(status='published')
         else:
+            # authorized users see published and their own drafts
             queryset = queryset.filter(
                 Q(status='published') | Q(author=self.request.user)
             )
-
+        
+        # check if ordering is by created_at to show pinned posts first
         ordering = self.request.query_params.get('ordering', '')
         show_pinned_first = not ordering or ordering in ['-created_at', 'created_at']
-
+        
         if show_pinned_first:
-            return Post.objects.filter(
-                Q(status='published') | (
-                    Q(author=self.request.user) if self.request.user.is_authenticated else Q()
+            # adding annotation to indicate if post is pinned
+            queryset = queryset.annotate(
+                has_pin=Exists(
+                    PinnedPost.objects.filter(post_id=OuterRef('pk'))
                 )
             )
-
+        
         return queryset
     
     def get_serializer_class(self):
@@ -151,7 +159,7 @@ def featured_posts(request):
         created_at__gte=week_ago
     ).exclude(
         id__in=[post.id for post in pinned_posts]
-    ).order_by('-views_count')[:6]
+    ).order_by('-view_count')[:6]
     
     # Serializing data
     pinned_serializer = PostListSerializer(
